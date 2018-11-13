@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhotoSphereViewer - cubemap demo</title>
+
+  <link rel="stylesheet" href="http://192.168.10.33:63/dist/photo-sphere-viewer.css">
+
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    #photosphere {
+      width: 100%;
+      height: 100%;
+    }
+
+    .psv-button.custom-button {
+      font-size: 22px;
+      line-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="photosphere"></div>
+<!--<img id="fff" style="position: absolute;left:0;top: 0;;width: 1024px;height: 1024px">-->
+
+<script src="http://192.168.10.33:63/node_modules/three/build/three.js"></script>
+<script src="http://192.168.10.33:63/node_modules/d.js/lib/D.js"></script>
+<script src="http://192.168.10.33:63/node_modules/uevent/uevent.js"></script>
+<script src="http://192.168.10.33:63/node_modules/dot/doT.js"></script>
+<script src="http://192.168.10.33:63/node_modules/nosleep.js/dist/NoSleep.js"></script>
+<script src="http://192.168.10.33:63/node_modules/three/examples/js/renderers/CanvasRenderer.js"></script>
+<script src="http://192.168.10.33:63/node_modules/three/examples/js/renderers/Projector.js"></script>
+<script src="http://192.168.10.33:63/node_modules/three/examples/js/controls/DeviceOrientationControls.js"></script>
+<script src="http://192.168.10.33:63/node_modules/three/examples/js/effects/StereoEffect.js"></script>
+<script src="http://192.168.10.33:63/dist/photo-sphere-viewer.js"></script>
+<script src="http://192.168.10.33:63/example/lib/merge.js"></script>
+
+<script>
+
+  var PSV, flag = [], next = 1;
+
+  var panos =
+  {
+    url: {
+      right: 'http://streetapi.ishowchina.com/image/icon/000288-0-200907090331490932?index=1&d=C',
+      back: 'http://streetapi.ishowchina.com/image/icon/000288-0-200907090331490932?index=2&d=C',
+      left: 'http://streetapi.ishowchina.com/image/icon/000288-0-200907090331490932?index=3&d=C',
+      front: 'http://streetapi.ishowchina.com/image/icon/000288-0-200907090331490932?index=4&d=C',
+      top: 'http://streetapi.ishowchina.com/image/icon/000288-0-200907090331490932?index=5&d=C',
+      bottom: 'http://streetapi.ishowchina.com/image/icon/000288-0-200907090331490932?index=6&d=C'
+    },
+    desc: '我秀全景'
+  }
+
+  function Merge(option) {
+    var config = {
+      position: [[0, 0], [512, 0], [0, 512], [512, 512]],
+      data: [
+        'http://streetapi.ishowchina.com/image/tile/000288-0-200907090331490932?c=010&d=C&zoom=3&face={f}&row=0&col=0'.replace('{f}', option),
+        'http://streetapi.ishowchina.com/image/tile/000288-0-200907090331490932?c=010&d=C&zoom=3&face={f}&row=0&col=1'.replace('{f}', option),
+        'http://streetapi.ishowchina.com/image/tile/000288-0-200907090331490932?c=010&d=C&zoom=3&face={f}&row=1&col=0'.replace('{f}', option),
+        'http://streetapi.ishowchina.com/image/tile/000288-0-200907090331490932?c=010&d=C&zoom=3&face={f}&row=1&col=1'.replace('{f}', option)
+      ],
+      canvasWidth: 1024,
+      canvasHeight: 1024,
+      canvasFillStyle: '#fff',
+      imgWidth: 512,
+      imgHeight: 512,
+      pano: option,
+      callback: function (imageUrl, type) {
+        // src赋值
+        switch (type) {
+          case 3:
+            panos.url.left = imageUrl;
+            break;
+          case 4:
+            panos.url.front = imageUrl;
+            break;
+          case 1:
+            panos.url.right = imageUrl;
+            break;
+          case 2:
+            panos.url.back = imageUrl;
+            break;
+          case 5:
+            panos.url.top = imageUrl;
+            break;
+          case 6:
+            panos.url.bottom = imageUrl;
+            break;
+        }
+
+        // 添加数组
+        flag.push(type)
+
+        // 加载结束既重新绘制全景
+        if (flag.length == 5) {
+          PSV.setPanorama(panos.url, true).then(function () {
+            PSV.setCaption(panos.desc);
+          });
+        }
+      }
+    }
+
+    //合并图片
+    MergeImage.merge4_4(config)
+
+    next++
+    if (next < 7) {
+      Merge(next)
+    }
+  }
+
+  Merge(next)
+
+  PSVPano()
+
+  function PSVPano() {
+
+    PSV = new PhotoSphereViewer({
+      container: 'photosphere',
+      panorama: panos.url,
+      caption: panos.desc,
+      //fisheye: true,
+      //webgl: false,
+      time_anim: false,
+      default_long: Math.PI / 2,
+      loading_img: 'assets/photosphere-logo.gif',
+      lang: {
+        autorotate: '视野漫游',
+        zoom: '缩放',
+        zoomOut: '放大',
+        zoomIn: '缩小',
+        download: '下载',
+        fullscreen: '全屏',
+        markers: '标记',
+        gyroscope: '陀螺仪',
+        stereo: '立体',
+        stereo_notification: 'Click anywhere to exit stereo view.',
+        please_rotate: ['Please rotate your device', '(or tap to continue)'],
+        two_fingers: ['Use two fingers to navigate']
+      },
+      navbar: [
+        'autorotate',
+        'zoom',//'markers',//'download'
+        {
+          title: '刷新',
+          className: 'custom-button',
+          content: '↻',
+          onClick: (function () {
+            var i = 0;
+            var loading = false;
+
+            return function () {
+              if (loading) {
+                return;
+              }
+
+              i = 1 - i;
+              loading = true;
+              // PSV.clearMarkers();
+
+              PSV.setPanorama(panos.url, true).then(function () {
+                PSV.setCaption(panos.desc);
+                loading = false;
+              });
+            }
+          }())
+        },
+        'caption', 'gyroscope', 'stereo', 'fullscreen'
+      ],
+
+      markers: (function () {
+        var a = [];
+        for (var i = 0; i < Math.PI * 2; i += Math.PI / 4) {
+          for (var j = -Math.PI / 2 + Math.PI / 4; j < Math.PI / 2; j += Math.PI / 4) {
+            a.push({
+              id: '#' + a.length,
+              tooltip: '#' + a.length,
+              latitude: j,
+              longitude: i,
+              image: 'assets/pin1.png',
+              width: 32,
+              height: 32,
+              anchor: 'bottom center',
+              data: {
+                deletable: true
+              }
+            });
+          }
+        }
+
+        a.push({
+          id: 'statue',
+          tooltip: 'Sky angel',
+          svgStyle: {
+            fill: 'rgba(255, 0, 111, 0.26)'
+          },
+          polygon_rad: [5.4196, 0.6801, 5.4644, 0.7610, 5.5004, 0.9194, 5.6522, 0.9363, 5.6923, 0.9757, 5.8132, 0.9662, 5.8625, 0.9315, 5.8905, 0.9991, 6.0215, 1.0558, 0.0822, 0.9023, 6.2390, 0.8732, 6.0377, 0.8648, 5.8348, 0.8780, 5.7862, 0.8678, 5.8175, 0.8614, 5.8431, 0.8128, 5.8354, 0.7028, 5.8620, 0.6204, 5.8815, 0.4776, 5.9339, 0.3234, 5.7591, 0.3510, 5.5885, 0.3273, 5.6381, 0.4327, 5.6353, 0.5043, 5.5959, 0.6228, 5.5877, 0.7108, 5.5952, 0.7519, 5.5775, 0.7502, 5.5021, 0.7012]
+        });
+
+        return a;
+      }())
+    });
+
+    PSV.on('click', function (e) {
+      if (e.marker && !e.marker.isPoly()) {
+        return;
+      }
+      PSV.addMarker({
+        id: '#' + Math.random(),
+        tooltip: 'Generated marker',
+        longitude: e.longitude,
+        latitude: e.latitude,
+        image: 'assets/pin1.png',
+        width: 32,
+        height: 32,
+        anchor: 'bottom center',
+        data: {
+          deletable: true
+        }
+      });
+    });
+
+    PSV.on('select-marker', function (marker) {
+      if (marker.data && marker.data.deletable) {
+        PSV.removeMarker(marker);
+      }
+    });
+
+    PSV.on('panorama-loaded', function () {
+      console.log("panorama-loaded", panos.url)
+      // PSV.clearMarkers();
+    });
+  }
+
+</script>
+
+
+</body>
+</html>
